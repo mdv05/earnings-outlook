@@ -111,9 +111,9 @@ def payout_plan(revenue, balance, dates):
     running = balance + np.cumsum(revenue, axis=1)
     reached = running >= DEVEX_MIN
     chance_by_day = reached.mean(axis=0)               # share of paths there by each day
-    first_day = np.where(reached.any(axis=1), reached.argmax(axis=1), -1)
-    hit = first_day[first_day >= 0]
-    likely_date = dates[int(np.median(hit))] if len(hit) > len(first_day) / 2 else None
+    # likely date = first day at least half of all futures have cashed out
+    likely_day = np.argmax(chance_by_day >= 0.5) if chance_by_day[-1] >= 0.5 else None
+    likely_date = dates[likely_day] if likely_day is not None else None
     return dict(chance_by_day=chance_by_day, likely_date=likely_date,
                 chance_90=chance_by_day[-1])
 

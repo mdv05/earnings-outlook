@@ -14,12 +14,13 @@ with st.sidebar:
     detailed = st.toggle("Detailed view", value=False, help="Simple view for solo creators, detail for studios")
     tax_rate = st.slider("Tax set-aside", 0, 40, 25, step=5, format="%d%%",
                          help="A rough planning number, not tax advice") / 100
-    show_usd = st.toggle("Show USD", value=True, help=f"DevEx rate: ${model.DEVEX_RATE} per Earned Robux")
+    show_usd = st.toggle("Show USD", value=True, help=f"DevEx rate: \\${model.DEVEX_RATE} per Earned Robux")
 
 
 def money(robux):
-    text = f"{robux:,.0f} R$"
-    return text + f" (${robux * model.DEVEX_RATE:,.0f})" if show_usd else text
+    text = f"{robux:,.0f} Robux"
+    # "\\$" because Streamlit reads a bare $ as the start of a math formula
+    return text + f" (\\${robux * model.DEVEX_RATE:,.0f})" if show_usd else text
 
 
 @st.cache_data
@@ -36,17 +37,17 @@ reserve = model.set_aside(outlook, tax_rate)
 
 # Early alert
 if status == "red":
-    st.error(f"Heads up: the last 7 days ({actual:,.0f} R$) came in below the low end of last week's outlook. "
+    st.error(f"Heads up: the last 7 days ({actual:,.0f} Robux) came in below the low end of last week's outlook. "
              "A good moment to ship an update.")
 elif status == "amber":
-    st.warning(f"The last 7 days ({actual:,.0f} R$) are tracking between the low and likely case.")
+    st.warning(f"The last 7 days ({actual:,.0f} Robux) are tracking between the low and likely case.")
 else:
-    st.success(f"The last 7 days ({actual:,.0f} R$) are on track with last week's outlook.")
+    st.success(f"The last 7 days ({actual:,.0f} Robux) are on track with last week's outlook.")
 
 # The three numbers a creator needs
 c1, c2, c3 = st.columns(3)
 c1.metric("Likely earnings, next 90 days", money(outlook["likely"]))
-c1.caption(f"Range: {outlook['low']:,.0f} to {outlook['high']:,.0f} R$")
+c1.caption(f"Range: {outlook['low']:,.0f} to {outlook['high']:,.0f} Robux")
 if plan["likely_date"]:
     c2.metric("Likely cash-out date", plan["likely_date"].strftime("%b %d"))
 else:
@@ -57,6 +58,7 @@ c3.metric("Suggested set-aside", money(reserve["total"]))
 c3.caption(f"{money(reserve['taxes'])} for taxes + {money(reserve['cushion'])} cushion for a slow stretch")
 
 # History plus the range going forward
+st.subheader("Daily earnings: last 60 days and next 90")
 bands = outlook["bands"]
 recent = history.tail(60)
 fig = go.Figure()
@@ -64,9 +66,9 @@ fig.add_trace(go.Scatter(x=bands["date"], y=bands["high"], line=dict(width=0), s
 fig.add_trace(go.Scatter(x=bands["date"], y=bands["low"], fill="tonexty", line=dict(width=0),
                          fillcolor="rgba(0,162,255,0.18)", name="Low to high range"))
 fig.add_trace(go.Scatter(x=bands["date"], y=bands["likely"], line=dict(color="#00a2ff", dash="dash"), name="Likely"))
-fig.add_trace(go.Scatter(x=recent["date"], y=recent["revenue"], line=dict(color="#222"), name="Actual"))
-fig.update_layout(height=360, margin=dict(l=10, r=10, t=30, b=10), yaxis_title="Earned Robux per day",
-                  legend=dict(orientation="h", y=1.1), title="Daily earnings: last 60 days and next 90")
+fig.add_trace(go.Scatter(x=recent["date"], y=recent["revenue"], line=dict(color="#9aa0a6", width=2), name="Actual"))
+fig.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="Earned Robux per day",
+                  legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
 st.plotly_chart(fig, width="stretch")
 
 # Credibility meter
@@ -83,10 +85,10 @@ if detailed:
     fig2.add_bar(x=changes["stream"], y=changes["players effect"], name="Players effect", marker_color="#00a2ff")
     fig2.add_bar(x=changes["stream"], y=changes["spending effect"], name="Spending effect", marker_color="#ff9f1c")
     fig2.update_layout(barmode="relative", height=320, margin=dict(l=10, r=10, t=10, b=10),
-                       yaxis_title="Change in Earned Robux", legend=dict(orientation="h", y=1.1))
+                       yaxis_title="Change in Earned Robux", legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
     st.plotly_chart(fig2, width="stretch")
     total = changes["total"].sum()
-    st.caption(f"Total change: {total:+,.0f} R$ "
+    st.caption(f"Total change: {total:+,.0f} Robux "
                f"({changes['players effect'].sum():+,.0f} from players, "
                f"{changes['spending effect'].sum():+,.0f} from spending).")
 
