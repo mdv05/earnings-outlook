@@ -44,18 +44,25 @@ elif status == "amber":
 else:
     st.success(f"The last 7 days ({actual:,.0f} Robux) are on track with last week's outlook.")
 
-# The three numbers a creator needs
-c1, c2, c3 = st.columns(3)
-c1.metric("Likely earnings, next 90 days", money(outlook["likely"]))
-c1.caption(f"Range: {outlook['low']:,.0f} to {outlook['high']:,.0f} Robux")
+# The numbers a creator needs: simple view shows two, detailed adds the set-aside
+cols = st.columns(3 if detailed else 2)
+cols[0].metric("Likely earnings, next 90 days", money(outlook["likely"]))
+cols[0].caption(f"Range: {outlook['low']:,.0f} to {outlook['high']:,.0f} Robux")
 if plan["likely_date"]:
-    c2.metric("Likely cash-out date", plan["likely_date"].strftime("%b %d"))
+    cols[1].metric("Likely cash-out date", plan["likely_date"].strftime("%b %d"))
 else:
-    c2.metric("Likely cash-out date", "Beyond 90 days")
-c2.caption(f"{plan['chance_90']:.0%} chance of reaching {model.DEVEX_MIN:,} Earned Robux within 90 days "
-           f"(you have {balance:,})")
-c3.metric("Suggested set-aside", money(reserve["total"]))
-c3.caption(f"{money(reserve['taxes'])} for taxes + {money(reserve['cushion'])} cushion for a slow stretch")
+    cols[1].metric("Likely cash-out date", "Beyond 90 days")
+cols[1].caption(f"{plan['chance_90']:.0%} chance of reaching {model.DEVEX_MIN:,} Earned Robux within 90 days "
+                f"(you have {balance:,})")
+if detailed:
+    cols[2].metric("Suggested set-aside", money(reserve["total"]))
+    cols[2].caption(f"{money(reserve['taxes'])} for taxes + {money(reserve['cushion'])} cushion for a slow stretch")
+
+# Credibility runs behind the scenes; creators just see how much to trust the numbers
+z = outlook["cred"]["z"]
+confidence = "Low" if z < 0.5 else "Medium" if z < 0.8 else "High"
+st.info(f"**{confidence} confidence:** based on {len(history)} days of your data"
+        + (", plus similar games." if z < 0.8 else "."))
 
 # History plus the range going forward
 st.subheader("Daily earnings: last 60 days and next 90")
@@ -71,14 +78,12 @@ fig.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="
                   legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
 st.plotly_chart(fig, width="stretch")
 
-# Credibility meter
-z = outlook["cred"]["z"]
-st.subheader("How much of this outlook is your own data?")
-st.progress(z, text=f"{z:.0%} your experience · {1 - z:.0%} similar experiences")
-st.caption(f"With {len(history)} days of history, your own trend gets {z:.0%} of the weight. "
-           "New experiences lean on similar ones until they build a track record.")
-
 if detailed:
+    st.subheader("How much of this outlook is your own data?")
+    st.progress(z, text=f"{z:.0%} your experience · {1 - z:.0%} similar experiences")
+    st.caption(f"With {len(history)} days of history, your own trend gets {z:.0%} of the weight. "
+               "New experiences lean on similar ones until they build a track record.")
+
     st.subheader("What changed this week")
     st.caption("Last 7 days vs the 7 before, split into more players vs more spending per player.")
     fig2 = go.Figure()
