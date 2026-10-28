@@ -12,8 +12,10 @@ st.caption("A concept for Roblox Creator Hub: plan around uneven income with ran
 with st.sidebar:
     name = st.selectbox("Sample experience", list(model.EXPERIENCES))
     detailed = st.toggle("Detailed view", value=False, help="Simple view for solo creators, detail for studios")
-    tax_rate = st.slider("Tax set-aside", 0, 40, 25, step=5, format="%d%%",
-                         help="A rough planning number, not tax advice") / 100
+    tax_rate = 0.25
+    if detailed:
+        tax_rate = st.slider("Tax set-aside", 0, 40, 25, step=5, format="%d%%",
+                             help="A rough planning number, not tax advice") / 100
     show_usd = st.toggle("Show USD", value=True, help=f"DevEx rate: \\${model.DEVEX_RATE} per Earned Robux")
 
 
